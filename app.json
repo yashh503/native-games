@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "games",
+    "slug": "games",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "games",
+        "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      }
+    }
+  }
+}
