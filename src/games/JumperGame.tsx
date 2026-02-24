@@ -66,7 +66,11 @@ interface Platform {
   initialX: number;
 }
 
-export default function JumperGame() {
+interface JumperGameProps {
+  onGameComplete?: (result: { gameId: string; score: number }) => void;
+}
+
+export default function JumperGame({ onGameComplete }: JumperGameProps) {
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [score, setScore] = useState(0);
@@ -180,6 +184,7 @@ export default function JumperGame() {
     if (isNew) setHighScore(finalScore);
     setScore(finalScore);
     setGameState('GAME_OVER');
+    onGameComplete?.({ gameId: 'jumper', score: finalScore });
   };
 
   const gameLoop = () => {

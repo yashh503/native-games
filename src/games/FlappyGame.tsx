@@ -38,7 +38,11 @@ interface Pipe {
   scored: boolean;
 }
 
-export default function FlappyGame() {
+interface FlappyGameProps {
+  onGameComplete?: (result: { gameId: string; score: number }) => void;
+}
+
+export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [birdY, setBirdY] = useState(GAME_HEIGHT / 2 - BIRD_HEIGHT / 2);
   const [pipes, setPipes] = useState<Pipe[]>([]);
@@ -87,7 +91,8 @@ export default function FlappyGame() {
     setGameState('GAME_OVER');
     const newHigh = await updateHighScoreIfNeeded(scoreRef.current);
     setHighScore(newHigh);
-  }, []);
+    onGameComplete?.({ gameId: 'flappy', score: scoreRef.current });
+  }, [onGameComplete]);
 
   const gameLoop = useCallback(() => {
     if (gameStateRef.current !== 'PLAYING') return;

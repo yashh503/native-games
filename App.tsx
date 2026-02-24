@@ -1,139 +1,82 @@
 import 'react-native-gesture-handler';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { UserProvider, useUser } from './src/context/UserContext';
+import HomeScreen from './src/screens/HomeScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import FlappyGame from './src/games/FlappyGame';
 import MazeGame from './src/games/MazeGame';
 import JumperGame from './src/games/JumperGame';
+import { GameCompletePayload } from './src/types/User';
+import { COLORS } from './src/constants/theme';
 
-type Screen = 'Home' | 'Flappy' | 'Maze' | 'Jumper';
+type Screen = 'Home' | 'Flappy' | 'Maze' | 'Jumper' | 'Profile';
 
-export default function App() {
+function AppNavigator() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('Home');
+  const { dispatch } = useUser();
+
+  // Check and update streak on app open
+  useEffect(() => {
+    dispatch({ type: 'CHECK_AND_UPDATE_STREAK' });
+  }, []);
+
+  const handleGameComplete = (result: { gameId: string; score: number; stars?: number }) => {
+    dispatch({
+      type: 'COMPLETE_GAME',
+      payload: result as GameCompletePayload,
+    });
+    setCurrentScreen('Home');
+  };
+
+  const navigate = (screen: Screen) => setCurrentScreen(screen);
+
+  if (currentScreen === 'Home') {
+    return <HomeScreen onNavigate={navigate} />;
+  }
+
+  if (currentScreen === 'Profile') {
+    return <ProfileScreen onBack={() => setCurrentScreen('Home')} />;
+  }
 
   if (currentScreen === 'Flappy') {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.header}>
-          <TouchableOpacity onPress={() => setCurrentScreen('Home')} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Flappy Game</Text>
-        </SafeAreaView>
-        <FlappyGame />
+      <View style={styles.gameContainer}>
+        <FlappyGame onGameComplete={handleGameComplete} />
       </View>
     );
   }
 
   if (currentScreen === 'Maze') {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.header}>
-          <TouchableOpacity onPress={() => setCurrentScreen('Home')} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Maze Game</Text>
-        </SafeAreaView>
-        <MazeGame />
+      <View style={styles.gameContainer}>
+        <MazeGame onGameComplete={handleGameComplete} />
       </View>
     );
   }
 
   if (currentScreen === 'Jumper') {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.header}>
-          <TouchableOpacity onPress={() => setCurrentScreen('Home')} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Jumper Game</Text>
-        </SafeAreaView>
-        <JumperGame />
+      <View style={styles.gameContainer}>
+        <JumperGame onGameComplete={handleGameComplete} />
       </View>
     );
   }
 
+  return null;
+}
+
+export default function App() {
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.homeContainer}>
-        <Text style={styles.title}>Mini Games</Text>
-        <Text style={styles.subtitle}>Choose a Game</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setCurrentScreen('Flappy')}
-        >
-          <Text style={styles.buttonText}>Flappy Game</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setCurrentScreen('Maze')}
-        >
-          <Text style={styles.buttonText}>Maze Game</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setCurrentScreen('Jumper')}
-        >
-          <Text style={styles.buttonText}>Jumper Game</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    </View>
+    <UserProvider>
+      <AppNavigator />
+    </UserProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  gameContainer: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
-  },
-  homeContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-    backgroundColor: '#1a1a2e',
-  },
-  backButton: {
-    paddingVertical: 8,
-    paddingRight: 16,
-  },
-  backText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#aaa',
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: '#16213e',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 8,
-    marginVertical: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    backgroundColor: COLORS.bg,
   },
 });

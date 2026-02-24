@@ -32,7 +32,11 @@ const DIFFICULTY_CONFIG = {
   hard: { label: "Hard", threeStarTime: 60, twoStarTime: 120 },
 };
 
-export default function MazeGame() {
+interface MazeGameProps {
+  onGameComplete?: (result: { gameId: string; score: number; stars: number }) => void;
+}
+
+export default function MazeGame({ onGameComplete }: MazeGameProps) {
   const [gameState, setGameState] = useState<GameState>("MENU");
   const [difficulty, setDifficulty] = useState<Difficulty>("hard");
   const [controlType, setControlType] = useState<ControlType>("swipe");
@@ -101,7 +105,8 @@ export default function MazeGame() {
     setTime(finalTime);
     setGameState("GAME_OVER");
     await loadProgress();
-  }, [difficulty]);
+    onGameComplete?.({ gameId: 'maze', score: stars, stars });
+  }, [difficulty, onGameComplete]);
 
   const quitToMenu = () => {
     isPlayingRef.current = false;
