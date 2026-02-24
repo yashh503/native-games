@@ -36,14 +36,25 @@ function currentISOWeek(): string {
 
 function calcPoints(payload: GameCompletePayload, streak: number): number {
   let base = 0;
+
   if (payload.gameId === 'flappy') {
-    base = 50 + payload.score * 2;
+    // Only reward meaningful play: 0 score = died immediately = no points
+    if (payload.score <= 0) return 0;
+    // 10pts per pipe passed, capped at 500
+    base = Math.min(payload.score * 10, 500);
   } else if (payload.gameId === 'maze') {
-    base = 80 + (payload.stars ?? 1) * 20;
+    // Stars 1-3: completion always earns points (you finished the maze)
+    // 1 star = 50, 2 stars = 100, 3 stars = 200
+    const stars = payload.stars ?? 1;
+    base = stars === 3 ? 200 : stars === 2 ? 100 : 50;
   } else if (payload.gameId === 'jumper') {
-    base = 50 + Math.floor(payload.score / 5);
+    // 0 score = fell before jumping = no points
+    if (payload.score <= 0) return 0;
+    // 5pts per height unit, capped at 500
+    base = Math.min(payload.score * 5, 500);
   }
-  const multiplier = streak >= 30 ? 1.5 : streak >= 14 ? 1.2 : streak >= 7 ? 1.1 : 1;
+
+  const multiplier = streak >= 30 ? 1.5 : streak >= 14 ? 1.2 : streak >= 7 ? 1.1 : 1.0;
   return Math.round(base * multiplier);
 }
 
@@ -162,6 +173,9 @@ function userReducer(state: UserState, action: UserAction): UserState {
         lastActiveDate: newLastActiveDate ?? state.lastActiveDate,
       };
     }
+
+    case 'ADD_BONUS_POINTS':
+      return { ...state, totalPoints: state.totalPoints + action.payload.points };
 
     case 'USE_STREAK_FREEZE': {
       const week = currentISOWeek();

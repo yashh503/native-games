@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface RewardedAdModalProps {
   visible: boolean;
@@ -29,7 +29,7 @@ export default function RewardedAdModal({
 
           {adLoading ? (
             <View style={styles.loadingWrap}>
-              <ActivityIndicator color={COLORS.accentGold} size="large" />
+              <ActivityIndicator color={COLORS.primary} size="large" />
               <Text style={styles.loadingText}>Ad playing...</Text>
             </View>
           ) : (
@@ -52,7 +52,7 @@ export default function RewardedAdModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -65,6 +65,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   icon: {
     fontSize: 48,
@@ -72,20 +77,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FONTS.headingBold,
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   desc: {
     fontSize: 15,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
   },
   watchBtn: {
-    backgroundColor: COLORS.accentGold,
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -94,8 +100,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   watchText: {
-    color: '#000',
-    fontWeight: '800',
+    color: '#fff',
+    fontFamily: FONTS.bold,
     fontSize: 16,
   },
   loadingWrap: {
@@ -104,6 +110,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
     marginTop: 10,
     fontSize: 14,
   },
@@ -112,6 +119,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     color: COLORS.textDim,
+    fontFamily: FONTS.medium,
     fontSize: 14,
   },
 });

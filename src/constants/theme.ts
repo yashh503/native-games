@@ -1,21 +1,52 @@
+// Font families — loaded in App.tsx via useFonts
+// Inter: body text, labels, UI elements
+// SpaceGrotesk: headings, scores, numbers, game titles
+export const FONTS = {
+  // Inter weights
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semiBold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extraBold: 'Inter_800ExtraBold',
+  // Space Grotesk weights (headings, scores, big numbers)
+  headingMedium: 'SpaceGrotesk_500Medium',
+  headingSemiBold: 'SpaceGrotesk_600SemiBold',
+  headingBold: 'SpaceGrotesk_700Bold',
+};
+
 export const COLORS = {
-  bg: '#0f0f1a',
-  bgCard: '#1a1a2e',
-  bgCardInner: '#16213e',
-  accent: '#e94560',
-  accentGold: '#f5a623',
-  accentGreen: '#4ade80',
-  accentBlue: '#60a5fa',
-  text: '#ffffff',
-  textMuted: '#888888',
-  textDim: '#555555',
-  border: '#2a2a4a',
-  streakOrange: '#ff6b35',
-  streakRed: '#ff3d3d',
-  // Urgency amber — used when < 4 hours remain in the day
-  urgentAmber: '#f59e0b',
-  // Freeze button glow border highlight when available
-  freezeGlow: '#60a5fa',
+  // Page & surface backgrounds
+  bg: '#F5F6FA',
+  bgCard: '#FFFFFF',
+  bgCardInner: '#F0F2F8',
+
+  // Brand / primary
+  primary: '#4F46E5',        // indigo — buttons, active states
+  primaryLight: '#EEF2FF',   // indigo tint for backgrounds
+
+  // Accent palette
+  accentGreen: '#16A34A',    // success, completion
+  accentGold: '#D97706',     // points, rewards
+  accentBlue: '#2563EB',     // links, info
+  accentRed: '#DC2626',      // errors, danger
+
+  // Streak / gamification
+  streakOrange: '#EA580C',   // streak fire
+  urgentAmber: '#B45309',    // urgency (<4h countdown)
+  freezeGlow: '#4F46E5',     // freeze button highlight
+
+  // Typography
+  text: '#111827',           // primary text
+  textSub: '#374151',        // secondary text
+  textMuted: '#6B7280',      // hints, meta
+  textDim: '#9CA3AF',        // disabled / placeholders
+
+  // Borders & dividers
+  border: '#E5E7EB',
+  divider: '#F3F4F6',
+
+  // Shadow base
+  shadow: '#1E293B',
 };
 
 export const STREAK_TARGET = 50;

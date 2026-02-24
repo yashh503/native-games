@@ -8,7 +8,7 @@ interface ProgressBarProps {
   height?: number;
 }
 
-export default function ProgressBar({ progress, color = COLORS.accentGold, height = 8 }: ProgressBarProps) {
+export default function ProgressBar({ progress, color = COLORS.primary, height = 8 }: ProgressBarProps) {
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function ProgressBar({ progress, color = COLORS.accentGold, heigh
 
 const styles = StyleSheet.create({
   track: {
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS.bgCardInner,
     overflow: 'hidden',
     width: '100%',
   },

@@ -3,15 +3,15 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Animated,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../context/UserContext';
 import { useAd } from '../hooks/useAd';
-import { COLORS, STREAK_TARGET, STREAK_MILESTONES } from '../constants/theme';
+import { COLORS, FONTS, STREAK_TARGET, STREAK_MILESTONES } from '../constants/theme';
 import StreakBanner from '../components/StreakBanner';
 import ProgressBar from '../components/ProgressBar';
 import GameCard from '../components/GameCard';
@@ -29,7 +29,7 @@ interface HomeScreenProps {
 const GAMES = [
   { screen: 'Flappy' as const, title: 'Flappy Bird', emoji: '🐦', hsKey: 'flappy_high_score', color: COLORS.accentBlue },
   { screen: 'Maze' as const, title: 'Maze Runner', emoji: '🐭', hsKey: 'maze_progress', color: COLORS.accentGreen },
-  { screen: 'Jumper' as const, title: 'Platform Jumper', emoji: '🕹️', hsKey: '@jumper_high_score', color: '#a78bfa' },
+  { screen: 'Jumper' as const, title: 'Platform Jumper', emoji: '🕹️', hsKey: '@jumper_high_score', color: COLORS.primary },
 ];
 
 function todayString() {
@@ -51,7 +51,6 @@ function formatCountdown(ms: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// < 4 hours = urgent
 function isUrgent(ms: number): boolean {
   return ms < 4 * 60 * 60 * 1000;
 }
@@ -230,7 +229,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       >
         {/* Top Bar */}
         <View style={styles.topBar}>
-          <Text style={styles.appTitle}>🧠 Brain Games</Text>
+          <View>
+            <Text style={styles.greeting}>Good day!</Text>
+            <Text style={styles.appTitle}>Brain Games</Text>
+          </View>
           <View style={styles.pointsWrap}>
             <PointsDisplay points={state.totalPoints} />
             {pointsDelta > 0 && (
@@ -256,19 +258,18 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
             gamesCompletedToday={state.gamesCompletedToday}
           />
           <View style={styles.streakProgressRow}>
-            <ProgressBar progress={streakProgress} color={COLORS.streakOrange} height={10} />
+            <ProgressBar progress={streakProgress} color={COLORS.streakOrange} height={8} />
             <Text style={styles.streakProgressLabel}>
-              {state.currentStreak}/{STREAK_TARGET} days
+              {state.currentStreak}/{STREAK_TARGET} day streak
             </Text>
           </View>
-          {/* Freeze button — glows when available */}
           {state.streakFreezeAvailable && state.currentStreak > 0 && (
             <TouchableOpacity
-              style={[styles.freezeBtn, styles.freezeBtnActive]}
+              style={styles.freezeBtn}
               onPress={handleStreakFreeze}
               activeOpacity={0.8}
             >
-              <Text style={styles.freezeText}>🛡️ Protect Streak (Watch Ad)</Text>
+              <Text style={styles.freezeText}>🛡️ Protect Streak</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -299,7 +300,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
                 {state.gamesCompletedToday > i && <Text style={styles.dotCheck}>✓</Text>}
               </View>
             ))}
-            <Text style={styles.dotLabel}>{state.gamesCompletedToday}/2 games</Text>
+            <Text style={styles.dotLabel}>{state.gamesCompletedToday}/2 games completed</Text>
           </View>
           {state.gamesCompletedToday >= 2 && (
             <Text style={styles.streakSaved}>🔥 Streak safe for today!</Text>
@@ -339,18 +340,23 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-    gap: 0,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: 16,
     paddingTop: 4,
   },
+  greeting: {
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    color: COLORS.textMuted,
+    marginBottom: 1,
+  },
   appTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 24,
+    fontFamily: FONTS.headingBold,
     color: COLORS.text,
   },
   pointsWrap: {
@@ -360,9 +366,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
+    fontFamily: FONTS.headingBold,
     color: COLORS.accentGreen,
-    fontWeight: '800',
-    fontSize: 14,
+    fontSize: 13,
   },
   card: {
     backgroundColor: COLORS.bgCard,
@@ -371,70 +377,63 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 2,
   },
   streakProgressRow: {
     marginTop: 14,
     gap: 6,
   },
   streakProgressLabel: {
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     fontSize: 12,
     textAlign: 'right',
   },
   freezeBtn: {
     marginTop: 12,
-    backgroundColor: COLORS.bgCardInner,
+    backgroundColor: COLORS.primaryLight,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  // Active glow state when freeze is available
-  freezeBtnActive: {
-    borderColor: COLORS.freezeGlow,
-    shadowColor: COLORS.freezeGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 3,
+    borderColor: COLORS.primary + '40',
   },
   freezeText: {
-    color: COLORS.accentBlue,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontFamily: FONTS.semiBold,
     fontSize: 14,
   },
   todayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.text,
   },
   sectionLabel: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.text,
     marginTop: 4,
     marginBottom: 4,
   },
   countdown: {
     fontSize: 13,
+    fontFamily: FONTS.medium,
     color: COLORS.textMuted,
     fontVariant: ['tabular-nums'],
   },
   countdownUrgent: {
     color: COLORS.urgentAmber,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -442,32 +441,34 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 2,
     borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.bgCardInner,
   },
   dotFilled: {
     backgroundColor: COLORS.accentGreen,
     borderColor: COLORS.accentGreen,
   },
   dotCheck: {
-    color: '#000',
-    fontWeight: '800',
-    fontSize: 16,
+    color: '#fff',
+    fontFamily: FONTS.headingBold,
+    fontSize: 15,
   },
   dotLabel: {
     color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
     fontSize: 14,
-    marginLeft: 4,
+    marginLeft: 2,
   },
   streakSaved: {
-    marginTop: 10,
+    marginTop: 12,
     color: COLORS.streakOrange,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     fontSize: 14,
     textAlign: 'center',
   },
@@ -481,8 +482,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   profileCtaText: {
-    color: COLORS.accentBlue,
-    fontWeight: '700',
+    color: COLORS.primary,
+    fontFamily: FONTS.headingSemiBold,
     fontSize: 15,
   },
 });

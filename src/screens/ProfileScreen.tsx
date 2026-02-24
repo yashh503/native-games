@@ -3,12 +3,12 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '../context/UserContext';
-import { COLORS, STREAK_TARGET, BADGE_LABELS } from '../constants/theme';
+import { COLORS, FONTS, STREAK_TARGET, BADGE_LABELS } from '../constants/theme';
 import ProgressBar from '../components/ProgressBar';
 
 interface ProfileScreenProps {
@@ -85,13 +85,13 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           ))}
         </View>
 
-        {/* 50-Day Target with circular-style progress */}
+        {/* 50-Day Target with progress bar */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>50-Day Streak Target</Text>
             <Text style={styles.cardSub}>{state.currentStreak}/{STREAK_TARGET}</Text>
           </View>
-          <ProgressBar progress={streakProgress} color={COLORS.streakOrange} height={12} />
+          <ProgressBar progress={streakProgress} color={COLORS.streakOrange} height={10} />
           {state.currentStreak >= STREAK_TARGET ? (
             <Text style={styles.achieved}>🏆 Target Achieved! You're a legend.</Text>
           ) : (
@@ -154,19 +154,20 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderColor: COLORS.border,
+    backgroundColor: COLORS.bgCard,
   },
   backBtn: {
     width: 60,
   },
   backText: {
-    color: COLORS.accentBlue,
+    color: COLORS.primary,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   headerTitle: {
     color: COLORS.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: FONTS.headingBold,
   },
   scroll: {
     flex: 1,
@@ -184,17 +185,17 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: COLORS.bgCard,
+    backgroundColor: COLORS.primaryLight,
     borderWidth: 3,
-    borderColor: COLORS.streakOrange,
+    borderColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
-    shadowColor: COLORS.streakOrange,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   avatarEmoji: {
     fontSize: 44,
@@ -202,11 +203,11 @@ const styles = StyleSheet.create({
   playerLabel: {
     color: COLORS.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: FONTS.headingBold,
   },
   legendBadge: {
     color: COLORS.accentGold,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     fontSize: 14,
     marginTop: 4,
   },
@@ -217,15 +218,15 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.streakOrange + '55',
+    borderColor: COLORS.streakOrange + '44',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: COLORS.streakOrange,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 2,
   },
   longestStreakLeft: {
     flexDirection: 'row',
@@ -238,17 +239,18 @@ const styles = StyleSheet.create({
   longestStreakLabel: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FONTS.headingBold,
   },
   longestStreakSub: {
     color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
     fontSize: 12,
     marginTop: 2,
   },
   longestStreakValue: {
     color: COLORS.streakOrange,
     fontSize: 36,
-    fontWeight: '800',
+    fontFamily: FONTS.headingBold,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -265,6 +267,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   statEmoji: {
     fontSize: 22,
@@ -272,11 +279,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: FONTS.headingBold,
     color: COLORS.text,
   },
   statLabel: {
     fontSize: 11,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     marginTop: 3,
     textAlign: 'center',
@@ -288,11 +296,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 6,
-    elevation: 4,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -302,28 +310,31 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.text,
     marginBottom: 12,
   },
   cardSub: {
     color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
     fontSize: 13,
     marginBottom: 12,
   },
   achieved: {
     color: COLORS.accentGold,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     marginTop: 10,
     textAlign: 'center',
   },
   daysLeft: {
     color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
     fontSize: 13,
     marginTop: 8,
   },
   noBadges: {
     color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
     fontSize: 14,
     lineHeight: 22,
   },
@@ -331,17 +342,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badgeChip: {
-    backgroundColor: COLORS.bgCardInner,
+    backgroundColor: COLORS.primaryLight,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: COLORS.streakOrange,
+    borderColor: COLORS.primary + '44',
     alignSelf: 'flex-start',
   },
   badgeText: {
-    color: COLORS.text,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontFamily: FONTS.semiBold,
     fontSize: 14,
   },
   // Locked badge placeholder
@@ -354,7 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: COLORS.textDim,
+    borderColor: COLORS.border,
     opacity: 0.65,
   },
   lockIcon: {
@@ -362,11 +373,12 @@ const styles = StyleSheet.create({
   },
   lockedLabel: {
     color: COLORS.textMuted,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
     fontSize: 13,
   },
   lockedReq: {
     color: COLORS.textDim,
+    fontFamily: FONTS.regular,
     fontSize: 11,
     marginTop: 2,
   },

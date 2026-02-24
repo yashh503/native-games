@@ -22,5 +22,6 @@ export type UserAction =
   | { type: 'LOAD_STATE'; payload: UserState }
   | { type: 'CHECK_AND_UPDATE_STREAK' }
   | { type: 'COMPLETE_GAME'; payload: GameCompletePayload }
+  | { type: 'ADD_BONUS_POINTS'; payload: { points: number } }
   | { type: 'USE_STREAK_FREEZE' }
   | { type: 'RESET' };

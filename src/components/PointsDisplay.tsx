@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface PointsDisplayProps {
   points: number;
@@ -15,7 +15,6 @@ export default function PointsDisplay({ points, style }: PointsDisplayProps) {
   // Tick-up number animation
   useEffect(() => {
     const end = points;
-    // Read current displayed value from a ref so we don't need it in deps
     setDisplayed((current) => {
       const start = current;
       if (start === end) return start;
@@ -35,7 +34,7 @@ export default function PointsDisplay({ points, style }: PointsDisplayProps) {
         }
       }, 16);
 
-      return start; // don't update immediately; interval will handle it
+      return start;
     });
 
     return () => {
@@ -71,7 +70,7 @@ export default function PointsDisplay({ points, style }: PointsDisplayProps) {
 const styles = StyleSheet.create({
   text: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: FONTS.headingBold,
     color: COLORS.accentGold,
   },
 });

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
-import { COLORS, STREAK_TARGET, MILESTONE_HINTS } from '../constants/theme';
+import { COLORS, FONTS, STREAK_TARGET, MILESTONE_HINTS } from '../constants/theme';
 
 interface StreakBannerProps {
   streak: number;
@@ -112,28 +112,29 @@ const styles = StyleSheet.create({
     fontSize: 42,
   },
   streakText: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.text,
   },
   streakNum: {
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: FONTS.headingBold,
     color: COLORS.streakOrange,
   },
   zeroText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.text,
   },
   sub: {
     fontSize: 13,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     marginTop: 2,
   },
   reminderRow: {
     marginTop: 10,
-    backgroundColor: COLORS.streakOrange + '1a',
+    backgroundColor: COLORS.streakOrange + '18',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   },
   reminderText: {
     color: COLORS.streakOrange,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
     fontSize: 13,
   },
 });

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableWithoutFeedback, TouchableOpacity, Dimensions } from 'react-native';
 import { getHighScore, updateHighScoreIfNeeded } from './flappy/utils/Storage';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 type GameModeType = 'easy' | 'hard' | 'medium';
 const gameMode: GameModeType = 'easy';
 
-// Constants
 const BIRD_WIDTH = 35;
 const BIRD_HEIGHT = 35;
 const BIRD_X = SCREEN_WIDTH * 0.25;
@@ -19,14 +18,12 @@ const PIPE_SPAWN_INTERVAL = gameMode === "easy" ? 2500 : 1500;
 const GROUND_HEIGHT = 80;
 const GAME_HEIGHT = SCREEN_HEIGHT - GROUND_HEIGHT;
 
-const COLORS = {
+const GAME_COLORS = {
   sky: '#87CEEB',
   bird: '#FFD700',
-  pipe: '#228B22',
-  ground: '#8B4513',
-  groundTop: '#90EE90',
-  text: '#FFFFFF',
-  textShadow: '#000000',
+  pipe: '#4F8A4F',
+  ground: '#8B6914',
+  groundTop: '#5DB858',
 };
 
 type GameState = 'MENU' | 'PLAYING' | 'GAME_OVER';
@@ -40,9 +37,10 @@ interface Pipe {
 
 interface FlappyGameProps {
   onGameComplete?: (result: { gameId: string; score: number }) => void;
+  onGoHome?: () => void;
 }
 
-export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
+export default function FlappyGame({ onGameComplete, onGoHome }: FlappyGameProps) {
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [birdY, setBirdY] = useState(GAME_HEIGHT / 2 - BIRD_HEIGHT / 2);
   const [pipes, setPipes] = useState<Pipe[]>([]);
@@ -58,13 +56,8 @@ export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
   const pipesRef = useRef<Pipe[]>([]);
   const scoreRef = useRef(0);
 
-  useEffect(() => {
-    loadHighScore();
-  }, []);
-
-  useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
+  useEffect(() => { loadHighScore(); }, []);
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
 
   const loadHighScore = async () => {
     const saved = await getHighScore();
@@ -97,108 +90,57 @@ export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
   const gameLoop = useCallback(() => {
     if (gameStateRef.current !== 'PLAYING') return;
 
-    // Apply gravity
     velocityRef.current += GRAVITY;
     birdYRef.current += velocityRef.current;
 
-    // Clamp bird position
-    if (birdYRef.current < 0) {
-      birdYRef.current = 0;
-      velocityRef.current = 0;
-    }
+    if (birdYRef.current < 0) { birdYRef.current = 0; velocityRef.current = 0; }
 
-    // Check ground collision
     if (birdYRef.current >= GAME_HEIGHT - BIRD_HEIGHT) {
       birdYRef.current = GAME_HEIGHT - BIRD_HEIGHT;
       endGame();
       return;
     }
 
-    // Spawn new pipes
     const now = Date.now();
     if (now - lastPipeTimeRef.current > PIPE_SPAWN_INTERVAL) {
       lastPipeTimeRef.current = now;
       pipeIdRef.current++;
-      const minGapTop = 80;
-      const maxGapTop = GAME_HEIGHT - GAP_SIZE - 80;
-      const gapTop = Math.random() * (maxGapTop - minGapTop) + minGapTop;
-      pipesRef.current.push({
-        id: pipeIdRef.current,
-        x: SCREEN_WIDTH,
-        gapTop,
-        scored: false,
-      });
+      const gapTop = Math.random() * (GAME_HEIGHT - GAP_SIZE - 160) + 80;
+      pipesRef.current.push({ id: pipeIdRef.current, x: SCREEN_WIDTH, gapTop, scored: false });
     }
 
-    // Move pipes and check collisions
-    const birdBox = {
-      left: BIRD_X,
-      right: BIRD_X + BIRD_WIDTH,
-      top: birdYRef.current,
-      bottom: birdYRef.current + BIRD_HEIGHT,
-    };
-
+    const birdBox = { left: BIRD_X, right: BIRD_X + BIRD_WIDTH, top: birdYRef.current, bottom: birdYRef.current + BIRD_HEIGHT };
     let newScore = scoreRef.current;
     const updatedPipes: Pipe[] = [];
 
     for (const pipe of pipesRef.current) {
       pipe.x -= PIPE_SPEED;
-
-      // Remove off-screen pipes
       if (pipe.x < -PIPE_WIDTH) continue;
 
-      // Check collision with top pipe
-      const topPipeBox = {
-        left: pipe.x,
-        right: pipe.x + PIPE_WIDTH,
-        top: 0,
-        bottom: pipe.gapTop,
-      };
-
-      // Check collision with bottom pipe
-      const bottomPipeBox = {
-        left: pipe.x,
-        right: pipe.x + PIPE_WIDTH,
-        top: pipe.gapTop + GAP_SIZE,
-        bottom: GAME_HEIGHT,
-      };
-
-      if (checkCollision(birdBox, topPipeBox) || checkCollision(birdBox, bottomPipeBox)) {
+      if (
+        checkCollision(birdBox, { left: pipe.x, right: pipe.x + PIPE_WIDTH, top: 0, bottom: pipe.gapTop }) ||
+        checkCollision(birdBox, { left: pipe.x, right: pipe.x + PIPE_WIDTH, top: pipe.gapTop + GAP_SIZE, bottom: GAME_HEIGHT })
+      ) {
         endGame();
         return;
       }
 
-      // Check scoring
-      if (!pipe.scored && pipe.x + PIPE_WIDTH < BIRD_X) {
-        pipe.scored = true;
-        newScore++;
-      }
-
+      if (!pipe.scored && pipe.x + PIPE_WIDTH < BIRD_X) { pipe.scored = true; newScore++; }
       updatedPipes.push(pipe);
     }
 
     pipesRef.current = updatedPipes;
     scoreRef.current = newScore;
-
-    // Update state for render
     setBirdY(birdYRef.current);
     setPipes([...pipesRef.current]);
     setScore(newScore);
-
     frameRef.current = requestAnimationFrame(gameLoop);
   }, [endGame]);
 
   const checkCollision = (
-    box1: { left: number; right: number; top: number; bottom: number },
-    box2: { left: number; right: number; top: number; bottom: number }
-  ) => {
-    return (
-      box1.left < box2.right &&
-      box1.right > box2.left &&
-      box1.top < box2.bottom &&
-      box1.bottom > box2.top
-    );
-  };
+    a: { left: number; right: number; top: number; bottom: number },
+    b: { left: number; right: number; top: number; bottom: number }
+  ) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 
   const startGame = useCallback(() => {
     resetGame();
@@ -208,21 +150,14 @@ export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
   }, [resetGame, gameLoop]);
 
   const handleTap = useCallback(() => {
-    if (gameState === 'MENU') {
-      startGame();
-    } else if (gameState === 'PLAYING') {
-      velocityRef.current = FLAP_VELOCITY;
-    } else if (gameState === 'GAME_OVER') {
-      startGame();
-    }
+    if (gameState === 'MENU') startGame();
+    else if (gameState === 'PLAYING') velocityRef.current = FLAP_VELOCITY;
+    else if (gameState === 'GAME_OVER') startGame();
   }, [gameState, startGame]);
 
   useEffect(() => {
     return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
+      if (frameRef.current !== null) { cancelAnimationFrame(frameRef.current); frameRef.current = null; }
     };
   }, []);
 
@@ -230,62 +165,45 @@ export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
     <TouchableWithoutFeedback onPress={handleTap}>
       <View style={styles.container}>
         {/* Bird */}
-        {gameState === 'PLAYING' && (
-          <View style={[styles.bird, { top: birdY, left: BIRD_X }]} />
-        )}
+        {gameState === 'PLAYING' && <View style={[styles.bird, { top: birdY, left: BIRD_X }]} />}
 
         {/* Pipes */}
-        {gameState === 'PLAYING' &&
-          pipes.map((pipe) => (
-            <React.Fragment key={pipe.id}>
-              {/* Top pipe */}
-              <View
-                style={[
-                  styles.pipe,
-                  {
-                    left: pipe.x,
-                    top: 0,
-                    height: pipe.gapTop,
-                  },
-                ]}
-              />
-              {/* Bottom pipe */}
-              <View
-                style={[
-                  styles.pipe,
-                  {
-                    left: pipe.x,
-                    top: pipe.gapTop + GAP_SIZE,
-                    height: GAME_HEIGHT - (pipe.gapTop + GAP_SIZE),
-                  },
-                ]}
-              />
-            </React.Fragment>
-          ))}
+        {gameState === 'PLAYING' && pipes.map((pipe) => (
+          <React.Fragment key={pipe.id}>
+            <View style={[styles.pipe, { left: pipe.x, top: 0, height: pipe.gapTop }]} />
+            <View style={[styles.pipe, { left: pipe.x, top: pipe.gapTop + GAP_SIZE, height: GAME_HEIGHT - (pipe.gapTop + GAP_SIZE) }]} />
+          </React.Fragment>
+        ))}
 
-        {/* Score display */}
+        {/* Live score */}
         {gameState === 'PLAYING' && (
           <View style={styles.scoreContainer}>
-            <Text style={styles.scoreText}>{score}</Text>
+            <Text style={styles.liveScore}>{score}</Text>
           </View>
         )}
 
-        {/* Menu overlay */}
+        {/* Menu */}
         {gameState === 'MENU' && (
           <View style={styles.overlay}>
-            <Text style={styles.title}>Flappy Bird</Text>
-            <Text style={styles.highScoreText}>High Score: {highScore}</Text>
-            <Text style={styles.startText}>Tap to Start</Text>
+            {onGoHome && (
+              <TouchableOpacity style={styles.homeBtn} onPress={onGoHome} activeOpacity={0.8}>
+                <Text style={styles.homeBtnText}>← Home</Text>
+              </TouchableOpacity>
+            )}
+            <Text style={styles.gameTitle}>Flappy Bird</Text>
+            {highScore > 0 && <Text style={styles.bestText}>Best: {highScore}</Text>}
+            <View style={styles.tapPill}><Text style={styles.tapText}>Tap to Fly 🐦</Text></View>
           </View>
         )}
 
-        {/* Game over overlay */}
+        {/* Game Over */}
         {gameState === 'GAME_OVER' && (
           <View style={styles.overlay}>
-            <Text style={styles.gameOverText}>Game Over</Text>
-            <Text style={styles.finalScoreText}>Score: {score}</Text>
-            <Text style={styles.highScoreText}>High Score: {highScore}</Text>
-            <Text style={styles.restartText}>Tap to Restart</Text>
+            <Text style={styles.gameOverLabel}>Game Over</Text>
+            <Text style={styles.bigScore}>{score}</Text>
+            <Text style={styles.bigScoreSub}>pipes passed</Text>
+            {highScore > 0 && <Text style={styles.bestText}>Best: {highScore}</Text>}
+            <View style={styles.tapPill}><Text style={styles.tapText}>Tap to Play Again</Text></View>
           </View>
         )}
 
@@ -300,21 +218,24 @@ export default function FlappyGame({ onGameComplete }: FlappyGameProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.sky,
-  },
+  container: { flex: 1, backgroundColor: GAME_COLORS.sky },
   bird: {
     position: 'absolute',
     width: BIRD_WIDTH,
     height: BIRD_HEIGHT,
-    backgroundColor: COLORS.bird,
+    backgroundColor: GAME_COLORS.bird,
     borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
   },
   pipe: {
     position: 'absolute',
     width: PIPE_WIDTH,
-    backgroundColor: COLORS.pipe,
+    backgroundColor: GAME_COLORS.pipe,
+    borderRadius: 4,
   },
   scoreContainer: {
     position: 'absolute',
@@ -323,69 +244,87 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
   },
-  scoreText: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: COLORS.text,
-    textShadowColor: COLORS.textShadow,
+  liveScore: {
+    fontSize: 52,
+    fontWeight: '800',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.35)',
     textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
   },
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 100,
+    backgroundColor: 'rgba(135,206,235,0.65)',
   },
-  title: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: COLORS.text,
-    textShadowColor: COLORS.textShadow,
+  homeBtn: {
+    position: 'absolute',
+    top: 52,
+    left: 20,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  homeBtnText: { color: '#1a1a2e', fontWeight: '700', fontSize: 14 },
+  gameTitle: {
+    fontSize: 44,
+    fontWeight: '800',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    marginBottom: 20,
-  },
-  gameOverText: {
-    fontSize: 42,
-    fontWeight: '700',
-    color: '#FF4444',
-    textShadowColor: COLORS.textShadow,
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    marginBottom: 20,
-  },
-  finalScoreText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.text,
-    textShadowColor: COLORS.textShadow,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 6,
     marginBottom: 10,
   },
-  highScoreText: {
-    fontSize: 24,
-    color: COLORS.text,
-    textShadowColor: COLORS.textShadow,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    marginBottom: 30,
+  gameOverLabel: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 6,
+    marginBottom: 8,
   },
-  startText: {
-    fontSize: 24,
-    color: COLORS.text,
-    textShadowColor: COLORS.textShadow,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+  bigScore: {
+    fontSize: 80,
+    fontWeight: '800',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+    lineHeight: 88,
   },
-  restartText: {
-    fontSize: 24,
-    color: COLORS.text,
-    textShadowColor: COLORS.textShadow,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+  bigScoreSub: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.88)',
+    fontWeight: '500',
+    marginBottom: 10,
   },
+  bestText: {
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.92)',
+    fontWeight: '600',
+    marginBottom: 24,
+  },
+  tapPill: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tapText: { fontSize: 16, color: '#1a1a2e', fontWeight: '700' },
   groundContainer: {
     position: 'absolute',
     left: 0,
@@ -393,14 +332,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: GROUND_HEIGHT,
   },
-  grassTop: {
-    width: '100%',
-    height: 10,
-    backgroundColor: COLORS.groundTop,
-  },
-  ground: {
-    width: '100%',
-    flex: 1,
-    backgroundColor: COLORS.ground,
-  },
+  grassTop: { width: '100%', height: 10, backgroundColor: GAME_COLORS.groundTop },
+  ground: { width: '100%', flex: 1, backgroundColor: GAME_COLORS.ground },
 });

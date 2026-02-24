@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface StreakWarningModalProps {
   visible: boolean;
@@ -43,7 +43,7 @@ export default function StreakWarningModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   card: {
@@ -54,6 +54,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   flame: {
     fontSize: 52,
@@ -61,13 +66,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FONTS.headingBold,
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 10,
   },
   body: {
     fontSize: 15,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 22,
@@ -75,10 +81,10 @@ const styles = StyleSheet.create({
   },
   highlight: {
     color: COLORS.streakOrange,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   playBtn: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -88,14 +94,15 @@ const styles = StyleSheet.create({
   },
   playText: {
     color: '#fff',
-    fontWeight: '800',
+    fontFamily: FONTS.bold,
     fontSize: 16,
   },
   laterBtn: {
     paddingVertical: 10,
   },
   laterText: {
-    color: COLORS.textDim,
+    fontFamily: FONTS.medium,
+    color: COLORS.textMuted,
     fontSize: 14,
   },
 });

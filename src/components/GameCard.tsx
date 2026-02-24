@@ -1,6 +1,6 @@
 import React, { memo, useRef } from 'react';
 import { View, Text, Animated, TouchableWithoutFeedback, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface GameCardProps {
   title: string;
@@ -10,7 +10,7 @@ interface GameCardProps {
   accentColor?: string;
 }
 
-function GameCard({ title, emoji, highScore, onPress, accentColor = COLORS.accentBlue }: GameCardProps) {
+function GameCard({ title, emoji, highScore, onPress, accentColor = COLORS.primary }: GameCardProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -34,7 +34,7 @@ function GameCard({ title, emoji, highScore, onPress, accentColor = COLORS.accen
   return (
     <TouchableWithoutFeedback onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-        <View style={[styles.iconWrap, { backgroundColor: accentColor + '22' }]}>
+        <View style={[styles.iconWrap, { backgroundColor: accentColor + '18' }]}>
           <Text style={styles.emoji}>{emoji}</Text>
         </View>
         <View style={styles.info}>
@@ -61,11 +61,11 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   iconWrap: {
     width: 56,
@@ -82,12 +82,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: FONTS.headingSemiBold,
     color: COLORS.text,
   },
   hs: {
     fontSize: 13,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     marginTop: 3,
   },
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
   },
   playText: {
     color: '#fff',
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     fontSize: 14,
   },
 });
