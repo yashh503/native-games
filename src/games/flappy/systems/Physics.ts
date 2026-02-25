@@ -7,7 +7,7 @@ const Physics = (entities: GameEntities, { events }: { events: GameEvent[] }): G
   // Handle flap events
   events.forEach((e) => {
     if (e.type === 'flap') {
-      bird.velocity = e.velocity;
+      if (e.velocity !== undefined) bird.velocity = e.velocity;
     }
   });
 

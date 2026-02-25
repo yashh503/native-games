@@ -78,24 +78,71 @@ export async function fetchAdConfig(): Promise<{ config: AdConfigData } | null> 
   });
 }
 
-// --- Auth-gated API helpers ---
+// --- User profile ---
+
+export interface ServerGameProfile {
+  coins: number;
+  totalPoints: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string | null;
+  gamesCompletedToday: number;
+  streakFreezeAvailable: boolean;
+  lastStreakFreezeUsed: string | null;
+  totalGamesPlayed: number;
+  badges: string[];
+  weeklyPlaysRemaining: number;
+  currentWeekId: string;
+}
+
+export interface UserProfileResponse {
+  user: {
+    userId: string;
+    email: string;
+    displayName: string;
+  } & Partial<ServerGameProfile>;
+}
 
 /**
- * Log a game completion event for analytics. Fire-and-forget.
+ * Fetch the authenticated user's full profile + game stats.
+ * Returns null on network failure (caller should fall back to cached state).
  */
-export function postGameComplete(
+export async function fetchUserProfile(
+  accessToken: string
+): Promise<UserProfileResponse | null> {
+  return fetchWithTimeout<UserProfileResponse>(`${BASE_URL}/users/me`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+// --- Game completion ---
+
+export interface GameCompleteResponse {
+  ok: boolean;
+  pointsEarned: number;
+  streakJustIncremented: boolean;
+  profile: ServerGameProfile;
+}
+
+/**
+ * Report a game completion. Server updates streak, points, coins, badges.
+ * Returns updated profile so client can sync state.
+ */
+export async function postGameComplete(
   gameId: string,
   score: number,
   accessToken: string,
   stars?: number
-): void {
-  // No await — analytics only, failures are acceptable
-  fetchWithTimeout(`${BASE_URL}/users/game-complete`, {
+): Promise<GameCompleteResponse | null> {
+  return fetchWithTimeout<GameCompleteResponse>(`${BASE_URL}/users/game-complete`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ gameId, score, stars }),
   });
 }
+
+// --- Leaderboard ---
 
 export interface SubmitScoreResponse {
   accepted: boolean;

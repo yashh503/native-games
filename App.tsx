@@ -73,7 +73,7 @@ function AppNavigator() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const { dispatch, state } = useUser();
   const { adLoading, showRewardedAd } = useAd();
-  const { accessToken } = useAuth();
+  const { accessToken, setGameProfile } = useAuth();
 
   useEffect(() => {
     dispatch({ type: 'CHECK_AND_UPDATE_STREAK' });
@@ -82,22 +82,40 @@ function AppNavigator() {
   const handleGameComplete = async (result: { gameId: string; score: number; stars?: number }) => {
     const pointsEarned = calcPointsPreview(result.gameId, result.score, result.stars, state.currentStreak);
 
+    // Optimistic local update for instant UI response
     dispatch({
       type: 'COMPLETE_GAME',
       payload: result as GameCompletePayload,
     });
 
-    // Fire-and-forget analytics ping to backend (only if authenticated)
-    if (accessToken) {
-      postGameComplete(result.gameId, result.score, accessToken, result.stars);
-    }
-
-    // Submit to leaderboard if authenticated
     let isNewBest = false;
+
     if (accessToken) {
+      // Report to backend — server updates streak/points/coins/badges authoritatively
+      const gameResponse = await postGameComplete(result.gameId, result.score, accessToken, result.stars);
+      if (gameResponse?.profile) {
+        // Sync authoritative server state back to both AuthContext and UserContext
+        setGameProfile(gameResponse.profile);
+        dispatch({ type: 'LOAD_STATE', payload: {
+          coins: gameResponse.profile.coins,
+          totalPoints: gameResponse.profile.totalPoints,
+          currentStreak: gameResponse.profile.currentStreak,
+          longestStreak: gameResponse.profile.longestStreak,
+          lastActiveDate: gameResponse.profile.lastActiveDate,
+          gamesCompletedToday: gameResponse.profile.gamesCompletedToday,
+          streakFreezeAvailable: gameResponse.profile.streakFreezeAvailable,
+          lastStreakFreezeUsed: gameResponse.profile.lastStreakFreezeUsed,
+          totalGamesPlayed: gameResponse.profile.totalGamesPlayed,
+          badges: gameResponse.profile.badges,
+          weeklyPlaysRemaining: gameResponse.profile.weeklyPlaysRemaining,
+          currentWeekId: gameResponse.profile.currentWeekId,
+        }});
+      }
+
+      // Submit to leaderboard
       const weekId = getCurrentWeekId();
-      const response = await submitScore(weekId, result.gameId, result.score, accessToken).catch(() => null);
-      isNewBest = response?.isNewBest ?? false;
+      const scoreResponse = await submitScore(weekId, result.gameId, result.score, accessToken).catch(() => null);
+      isNewBest = scoreResponse?.isNewBest ?? false;
     }
 
     setPendingResult({
@@ -216,7 +234,7 @@ function AppNavigator() {
 }
 
 function AuthGate() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, gameProfile } = useAuth();
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
 
   if (isLoading) {
@@ -235,7 +253,7 @@ function AuthGate() {
   }
 
   return (
-    <UserProvider key={user.userId} userId={user.userId}>
+    <UserProvider key={user.userId} userId={user.userId} serverProfile={gameProfile}>
       <AppNavigator />
     </UserProvider>
   );
