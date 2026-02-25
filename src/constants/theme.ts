@@ -1,17 +1,17 @@
 // Font families — loaded in App.tsx via useFonts
-// Inter: body text, labels, UI elements
-// SpaceGrotesk: headings, scores, numbers, game titles
+// Barlow: body text, labels, buttons, UI elements
+// Kanit: headings, scores, numbers, game titles, streak counters
 export const FONTS = {
-  // Inter weights
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  extraBold: 'Inter_800ExtraBold',
-  // Space Grotesk weights (headings, scores, big numbers)
-  headingMedium: 'SpaceGrotesk_500Medium',
-  headingSemiBold: 'SpaceGrotesk_600SemiBold',
-  headingBold: 'SpaceGrotesk_700Bold',
+  // Barlow weights (body text, labels, UI)
+  regular: 'Barlow_400Regular',
+  medium: 'Barlow_500Medium',
+  semiBold: 'Barlow_600SemiBold',
+  bold: 'Barlow_700Bold',
+  extraBold: 'Barlow_800ExtraBold',
+  // Kanit weights (headings, scores, big numbers)
+  headingMedium: 'Kanit_500Medium',
+  headingSemiBold: 'Kanit_600SemiBold',
+  headingBold: 'Kanit_700Bold',
 };
 
 export const COLORS = {

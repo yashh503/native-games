@@ -1,18 +1,19 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-} from '@expo-google-fonts/inter';
+  Barlow_400Regular,
+  Barlow_500Medium,
+  Barlow_600SemiBold,
+  Barlow_700Bold,
+  Barlow_800ExtraBold,
+} from '@expo-google-fonts/barlow';
 import {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+  Kanit_500Medium,
+  Kanit_600SemiBold,
+  Kanit_700Bold,
+} from '@expo-google-fonts/kanit';
 import { useFonts } from 'expo-font';
 import { UserProvider, useUser } from './src/context/UserContext';
 import HomeScreen from './src/screens/HomeScreen';
@@ -141,14 +142,14 @@ function AppNavigator() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    SpaceGrotesk_700Bold,
+    Barlow_400Regular,
+    Barlow_500Medium,
+    Barlow_600SemiBold,
+    Barlow_700Bold,
+    Barlow_800ExtraBold,
+    Kanit_500Medium,
+    Kanit_600SemiBold,
+    Kanit_700Bold,
   });
 
   if (!fontsLoaded) {
@@ -160,9 +161,11 @@ export default function App() {
   }
 
   return (
-    <UserProvider>
-      <AppNavigator />
-    </UserProvider>
+    <SafeAreaProvider>
+      <UserProvider>
+        <AppNavigator />
+      </UserProvider>
+    </SafeAreaProvider>
   );
 }
 
