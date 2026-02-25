@@ -16,23 +16,31 @@ import {
 } from '@expo-google-fonts/kanit';
 import { useFonts } from 'expo-font';
 import { UserProvider, useUser } from './src/context/UserContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import HomeScreen from './src/screens/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import WheelScreen from './src/screens/WheelScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import FlappyGame from './src/games/FlappyGame';
 import MazeGame from './src/games/MazeGame';
 import JumperGame from './src/games/JumperGame';
 import GameResultScreen from './src/components/GameResultScreen';
+import BottomNav, { NavTab } from './src/components/BottomNav';
 import { useAd } from './src/hooks/useAd';
 import { GameCompletePayload } from './src/types/User';
 import { COLORS } from './src/constants/theme';
+import { postGameComplete, submitScore } from './src/services/api';
 
-type Screen = 'Home' | 'Flappy' | 'Maze' | 'Jumper' | 'Profile';
+type Screen = 'Home' | 'Flappy' | 'Maze' | 'Jumper' | 'Profile' | 'Wheel' | 'Leaderboard';
 
 interface PendingResult {
   gameId: 'flappy' | 'maze' | 'jumper';
   score: number;
   stars?: number;
   pointsEarned: number;
+  isNewBest?: boolean;
 }
 
 function calcPointsPreview(gameId: string, score: number, stars?: number, streak: number = 0): number {
@@ -51,17 +59,27 @@ function calcPointsPreview(gameId: string, score: number, stars?: number, streak
   return Math.round(base * multiplier);
 }
 
+function getCurrentWeekId(): string {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000);
+  const week = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
 function AppNavigator() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('Home');
   const [pendingResult, setPendingResult] = useState<PendingResult | null>(null);
+  const [activeTab, setActiveTab] = useState<NavTab>('home');
   const { dispatch, state } = useUser();
   const { adLoading, showRewardedAd } = useAd();
+  const { accessToken } = useAuth();
 
   useEffect(() => {
     dispatch({ type: 'CHECK_AND_UPDATE_STREAK' });
   }, []);
 
-  const handleGameComplete = (result: { gameId: string; score: number; stars?: number }) => {
+  const handleGameComplete = async (result: { gameId: string; score: number; stars?: number }) => {
     const pointsEarned = calcPointsPreview(result.gameId, result.score, result.stars, state.currentStreak);
 
     dispatch({
@@ -69,11 +87,25 @@ function AppNavigator() {
       payload: result as GameCompletePayload,
     });
 
+    // Fire-and-forget analytics ping to backend (only if authenticated)
+    if (accessToken) {
+      postGameComplete(result.gameId, result.score, accessToken, result.stars);
+    }
+
+    // Submit to leaderboard if authenticated
+    let isNewBest = false;
+    if (accessToken) {
+      const weekId = getCurrentWeekId();
+      const response = await submitScore(weekId, result.gameId, result.score, accessToken).catch(() => null);
+      isNewBest = response?.isNewBest ?? false;
+    }
+
     setPendingResult({
       gameId: result.gameId as 'flappy' | 'maze' | 'jumper',
       score: result.score,
       stars: result.stars,
       pointsEarned,
+      isNewBest,
     });
   };
 
@@ -92,10 +124,18 @@ function AppNavigator() {
   const handleResultDone = () => {
     setPendingResult(null);
     setCurrentScreen('Home');
+    setActiveTab('home');
   };
 
-  const navigate = (screen: Screen) => setCurrentScreen(screen);
+  const navigate = (screen: Screen) => {
+    setCurrentScreen(screen);
+    if (screen === 'Home') setActiveTab('home');
+    else if (screen === 'Wheel') setActiveTab('play');
+    else if (screen === 'Leaderboard') setActiveTab('leaderboard');
+    else if (screen === 'Profile') setActiveTab('profile');
+  };
 
+  // Game screens — full screen, no BottomNav
   if (pendingResult) {
     return (
       <GameResultScreen
@@ -110,13 +150,10 @@ function AppNavigator() {
     );
   }
 
-  if (currentScreen === 'Home') return <HomeScreen onNavigate={navigate} />;
-  if (currentScreen === 'Profile') return <ProfileScreen onBack={() => setCurrentScreen('Home')} />;
-
   if (currentScreen === 'Flappy') {
     return (
       <View style={styles.gameContainer}>
-        <FlappyGame onGameComplete={handleGameComplete} onGoHome={() => setCurrentScreen('Home')} />
+        <FlappyGame onGameComplete={handleGameComplete} onGoHome={() => navigate('Home')} />
       </View>
     );
   }
@@ -124,7 +161,7 @@ function AppNavigator() {
   if (currentScreen === 'Maze') {
     return (
       <View style={styles.gameContainer}>
-        <MazeGame onGameComplete={handleGameComplete} onGoHome={() => setCurrentScreen('Home')} />
+        <MazeGame onGameComplete={handleGameComplete} onGoHome={() => navigate('Home')} />
       </View>
     );
   }
@@ -132,12 +169,76 @@ function AppNavigator() {
   if (currentScreen === 'Jumper') {
     return (
       <View style={styles.gameContainer}>
-        <JumperGame onGameComplete={handleGameComplete} onGoHome={() => setCurrentScreen('Home')} />
+        <JumperGame onGameComplete={handleGameComplete} onGoHome={() => navigate('Home')} />
       </View>
     );
   }
 
-  return null;
+  // Main screens with BottomNav
+  const renderMainScreen = () => {
+    if (currentScreen === 'Profile') {
+      return <ProfileScreen onBack={() => navigate('Home')} />;
+    }
+    if (currentScreen === 'Leaderboard') {
+      return <LeaderboardScreen />;
+    }
+    if (currentScreen === 'Wheel') {
+      const gameIdToScreen: Record<string, Screen> = {
+        flappy: 'Flappy',
+        maze: 'Maze',
+        jumper: 'Jumper',
+      };
+      return (
+        <WheelScreen
+          onPlayGame={(gameId) => navigate(gameIdToScreen[gameId] ?? 'Home')}
+          weeklyPlaysRemaining={state.weeklyPlaysRemaining}
+          coins={state.coins}
+        />
+      );
+    }
+    return <HomeScreen onNavigate={navigate} />;
+  };
+
+  return (
+    <View style={styles.flex}>
+      <View style={styles.flex}>{renderMainScreen()}</View>
+      <BottomNav active={activeTab} onNavigate={(tab) => {
+        const tabToScreen: Record<NavTab, Screen> = {
+          home: 'Home',
+          play: 'Wheel',
+          leaderboard: 'Leaderboard',
+          profile: 'Profile',
+        };
+        navigate(tabToScreen[tab]);
+      }} />
+    </View>
+  );
+}
+
+function AuthGate() {
+  const { user, isLoading } = useAuth();
+  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
+
+  if (isLoading) {
+    return (
+      <View style={styles.splash}>
+        <ActivityIndicator color={COLORS.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    if (authScreen === 'login') {
+      return <LoginScreen onNavigateToRegister={() => setAuthScreen('register')} />;
+    }
+    return <RegisterScreen onNavigateToLogin={() => setAuthScreen('login')} />;
+  }
+
+  return (
+    <UserProvider key={user.userId} userId={user.userId}>
+      <AppNavigator />
+    </UserProvider>
+  );
 }
 
 export default function App() {
@@ -162,9 +263,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <UserProvider>
-        <AppNavigator />
-      </UserProvider>
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
@@ -176,6 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  flex: { flex: 1 },
   gameContainer: {
     flex: 1,
     backgroundColor: COLORS.bg,

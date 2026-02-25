@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import { COLORS, FONTS, STREAK_TARGET, BADGE_LABELS } from '../constants/theme';
 import ProgressBar from '../components/ProgressBar';
 
@@ -25,11 +28,36 @@ const ALL_BADGES: Array<{ key: string; label: string; threshold: number }> = [
 
 export default function ProfileScreen({ onBack }: ProfileScreenProps) {
   const { state } = useUser();
+  const { user, logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const streakProgress = Math.min(state.currentStreak / STREAK_TARGET, 1);
 
   const earnedBadges = ALL_BADGES.filter((b) => state.badges.includes(b.key));
   const lockedBadges = ALL_BADGES.filter((b) => !state.badges.includes(b.key));
+
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          setLoggingOut(true);
+          await logout();
+          // AuthGate in App.tsx will automatically show LoginScreen
+        },
+      },
+    ]);
+  };
+
+  // Initials from display name for avatar
+  const initials = (user?.displayName ?? 'BG')
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -39,7 +67,11 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
-        <View style={styles.backBtn} />
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7} disabled={loggingOut}>
+          {loggingOut
+            ? <ActivityIndicator size="small" color={COLORS.accentRed} />
+            : <Text style={styles.logoutText}>Sign Out</Text>}
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -50,12 +82,22 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
         {/* Avatar */}
         <View style={styles.avatarSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarEmoji}>🧠</Text>
+            <Text style={styles.avatarInitials}>{initials}</Text>
           </View>
-          <Text style={styles.playerLabel}>Brain Gamer</Text>
+          <Text style={styles.playerLabel}>{user?.displayName ?? 'Brain Gamer'}</Text>
+          <Text style={styles.playerEmail}>{user?.email}</Text>
           {state.currentStreak >= STREAK_TARGET && (
             <Text style={styles.legendBadge}>👑 50-Day Legend</Text>
           )}
+        </View>
+
+        {/* Coins balance */}
+        <View style={styles.coinsCard}>
+          <Text style={styles.coinsEmoji}>🪙</Text>
+          <View style={styles.coinsInfo}>
+            <Text style={styles.coinsValue}>{state.coins} coins</Text>
+            <Text style={styles.coinsSub}>Spend 3 coins to retry a game</Text>
+          </View>
         </View>
 
         {/* Longest Streak — elevated hero card */}
@@ -157,11 +199,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgCard,
   },
   backBtn: {
-    width: 60,
+    width: 70,
   },
   backText: {
     color: COLORS.primary,
     fontSize: 16,
+    fontFamily: FONTS.semiBold,
+  },
+  logoutBtn: {
+    width: 70,
+    alignItems: 'flex-end',
+  },
+  logoutText: {
+    color: COLORS.accentRed,
+    fontSize: 14,
     fontFamily: FONTS.semiBold,
   },
   headerTitle: {
@@ -197,13 +248,46 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  avatarEmoji: {
-    fontSize: 44,
+  avatarInitials: {
+    fontSize: 32,
+    fontFamily: FONTS.headingBold,
+    color: COLORS.primary,
   },
   playerLabel: {
     color: COLORS.text,
     fontSize: 20,
     fontFamily: FONTS.headingBold,
+    marginBottom: 2,
+  },
+  playerEmail: {
+    color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  coinsCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  coinsEmoji: { fontSize: 28 },
+  coinsInfo: { flex: 1 },
+  coinsValue: {
+    fontFamily: FONTS.headingBold,
+    fontSize: 18,
+    color: '#92400E',
+  },
+  coinsSub: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: '#B45309',
+    marginTop: 2,
   },
   legendBadge: {
     color: COLORS.accentGold,

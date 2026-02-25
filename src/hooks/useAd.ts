@@ -1,42 +1,69 @@
 import { useRef, useState, useCallback } from 'react';
-
-// Maximum interstitial frequency: 1 per every 4 completed games
-const INTERSTITIAL_INTERVAL = 4;
+import { useAdConfig } from './useAdConfig';
+import { AdConfigData } from '../services/api';
 
 export function useAd() {
+  const adConfig = useAdConfig();
   const [adLoading, setAdLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Tracks games completed since last interstitial — kept in a ref (no re-render needed)
   const gamesSinceInterstitialRef = useRef(0);
+  const lastInterstitialTimeRef = useRef<number>(0);
 
   const showRewardedAd = useCallback(
     (onComplete: () => void, _onDismiss?: () => void) => {
-      if (adLoading) return; // Prevent stacking ad requests
+      // If global kill switch or rewarded disabled, skip and grant reward instantly
+      if (adConfig.globalKillSwitch || !adConfig.rewarded.enabled) {
+        onComplete();
+        return;
+      }
+      if (adLoading) return;
+
       setAdLoading(true);
+
+      // Mock — swap for real SDK when provider !== 'mock'
       timerRef.current = setTimeout(() => {
         setAdLoading(false);
         onComplete();
         timerRef.current = null;
       }, 3000);
     },
-    [adLoading]
+    [adLoading, adConfig]
   );
 
   /**
-   * Call after each game completes. Returns true if an interstitial should be shown.
-   * Caller is responsible for actually showing the interstitial modal when true is returned.
-   * Never shows interstitial immediately after a streak increment (pass streakJustIncremented=true).
+   * Call after each game completes. Returns true if an interstitial should be triggered.
+   * Frequency + cooldown are driven by backend config (changeable without app update).
    */
-  const recordGameComplete = useCallback((streakJustIncremented: boolean = false): boolean => {
-    gamesSinceInterstitialRef.current += 1;
-    if (streakJustIncremented) return false; // Never show ad right after a streak milestone
-    if (gamesSinceInterstitialRef.current >= INTERSTITIAL_INTERVAL) {
-      gamesSinceInterstitialRef.current = 0;
-      return true;
-    }
-    return false;
-  }, []);
+  const recordGameComplete = useCallback(
+    (streakJustIncremented: boolean = false): boolean => {
+      if (adConfig.globalKillSwitch || !adConfig.interstitial.enabled) return false;
 
-  return { adLoading, showRewardedAd, recordGameComplete };
+      gamesSinceInterstitialRef.current += 1;
+
+      if (streakJustIncremented && adConfig.interstitial.suppressOnStreakIncrement) {
+        return false;
+      }
+
+      const { frequencyGames, cooldownSeconds } = adConfig.interstitial;
+      const cooldownMs = cooldownSeconds * 1000;
+      const now = Date.now();
+      const timeSinceLast = now - lastInterstitialTimeRef.current;
+
+      if (
+        gamesSinceInterstitialRef.current >= frequencyGames &&
+        timeSinceLast >= cooldownMs
+      ) {
+        gamesSinceInterstitialRef.current = 0;
+        lastInterstitialTimeRef.current = now;
+        return true;
+      }
+
+      return false;
+    },
+    [adConfig]
+  );
+
+  return { adLoading, showRewardedAd, recordGameComplete, adConfig };
 }
+
+export type { AdConfigData };

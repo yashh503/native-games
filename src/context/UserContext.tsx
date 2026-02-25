@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef } from 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserState, UserAction, GameCompletePayload } from '../types/User';
 
-const STORAGE_KEY = '@user_state_v1';
+const storageKey = (userId: string) => `@user_state_v1:${userId}`;
 
 const DEFAULT_STATE: UserState = {
   totalPoints: 0,
@@ -14,6 +14,9 @@ const DEFAULT_STATE: UserState = {
   lastStreakFreezeUsed: null,
   totalGamesPlayed: 0,
   badges: [],
+  coins: 3,
+  weeklyPlaysRemaining: 5,
+  currentWeekId: '',
 };
 
 function todayString(): string {
@@ -162,6 +165,20 @@ function userReducer(state: UserState, action: UserAction): UserState {
         }
       }
 
+      // Coin rewards
+      const newCoins = state.coins + 1; // +1 per game
+      // Streak milestone coin bonus
+      const milestoneCoins = [7, 14, 30, 50];
+      const earnedMilestoneCoins = milestoneCoins.includes(newStreak) ? 3 : 0;
+
+      // Weekly plays: reset if new week, then decrement
+      const thisWeek = currentISOWeek();
+      let newWeeklyPlays = state.weeklyPlaysRemaining;
+      if (state.currentWeekId !== thisWeek) {
+        newWeeklyPlays = 5; // reset
+      }
+      newWeeklyPlays = Math.max(0, newWeeklyPlays - 1);
+
       return {
         ...state,
         totalPoints: newTotal,
@@ -171,6 +188,9 @@ function userReducer(state: UserState, action: UserAction): UserState {
         longestStreak: newLongestStreak,
         badges: newBadges,
         lastActiveDate: newLastActiveDate ?? state.lastActiveDate,
+        coins: newCoins + earnedMilestoneCoins,
+        weeklyPlaysRemaining: newWeeklyPlays,
+        currentWeekId: thisWeek,
       };
     }
 
@@ -185,6 +205,15 @@ function userReducer(state: UserState, action: UserAction): UserState {
         streakFreezeAvailable: false,
         lastStreakFreezeUsed: week,
       };
+    }
+
+    case 'ADD_COINS':
+      return { ...state, coins: state.coins + action.payload.amount };
+
+    case 'SPEND_COINS': {
+      const newCoins = state.coins - action.payload.amount;
+      if (newCoins < 0) return state; // guard: don't go negative locally
+      return { ...state, coins: newCoins };
     }
 
     case 'RESET':
@@ -202,11 +231,12 @@ interface UserContextValue {
 
 const UserContext = createContext<UserContextValue | null>(null);
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
+export function UserProvider({ userId, children }: { userId: string; children: React.ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, DEFAULT_STATE);
   const initializedRef = useRef(false);
+  const STORAGE_KEY = storageKey(userId);
 
-  // Load persisted state on mount
+  // Load this user's persisted state on mount
   useEffect(() => {
     async function load() {
       try {
@@ -222,13 +252,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
     }
     load();
-  }, []);
+  }, [STORAGE_KEY]);
 
-  // Persist state after every change (skip the very first render before load finishes)
+  // Persist this user's state to AsyncStorage after every change
   useEffect(() => {
     if (!initializedRef.current) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
-  }, [state]);
+  }, [state, STORAGE_KEY]);
 
   return <UserContext.Provider value={{ state, dispatch }}>{children}</UserContext.Provider>;
 }
